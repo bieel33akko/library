@@ -5777,17 +5777,29 @@ end
 
             
             if type(decoded.objects) == "table" then
-                for _, option in next, decoded.objects do
-                    if type(option) == "table" and option.idx and Library.SetFlags[option.idx] then
-                        local setter = Library.SetFlags[option.idx]
-                        local val = option.value
-                        if type(val) == "table" and val.Color then
-                            pcall(setter, Color3.fromHex(val.Color), val.Alpha)
-                        else
-                            pcall(setter, val)
+                local objects = decoded.objects
+                local setters = Library.SetFlags
+                task.spawn(function()
+                    local processed = 0
+                    for index = 1, #objects do
+                        local option = objects[index]
+                        if type(option) == "table" and option.idx then
+                            local setter = setters[option.idx]
+                            if setter then
+                                local val = option.value
+                                if type(val) == "table" and val.Color then
+                                    pcall(setter, Color3.fromHex(val.Color), val.Alpha)
+                                else
+                                    pcall(setter, val)
+                                end
+                            end
+                        end
+                        processed += 1
+                        if processed % 20 == 0 then
+                            task.wait()
                         end
                     end
-                end
+                end)
             end
 
             
