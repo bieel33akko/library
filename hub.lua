@@ -113,7 +113,7 @@ end)
 
 local qt = queue_on_teleport or queueteleport or (syn and syn.queue_on_teleport)
 if qt then
-    qt([[loadstring(game:HttpGet("https://raw.githubusercontent.com/SEU_USER/SEU_REPO/main/game.lua"))()]])
+    qt([[loadstring(game:HttpGet("https://raw.githubusercontent.com/bieel33akko/library/refs/heads/main/game.lua"))()]])
 end
 
 RunService.Heartbeat:Connect(function()
