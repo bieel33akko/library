@@ -5776,79 +5776,85 @@ end
             if type(decoded) ~= "table" then return false, "invalid config data" end
 
             
-            if type(decoded.objects) == "table" then
-                local objects = decoded.objects
-                local setters = Library.SetFlags
-                task.spawn(function()
-                    local processed = 0
-                    for index = 1, #objects do
-                        local option = objects[index]
-                        if type(option) == "table" and option.idx then
-                            local setter = setters[option.idx]
-                            if setter then
-                                local val = option.value
-                                if type(val) == "table" and val.Color then
-                                    pcall(setter, Color3.fromHex(val.Color), val.Alpha)
-                                else
-                                    pcall(setter, val)
-                                end
+            SaveManager._loadToken = (SaveManager._loadToken or 0) + 1
+            local loadToken = SaveManager._loadToken
+            local objects = type(decoded.objects) == "table" and decoded.objects or {}
+            local setters = Library.SetFlags
+            local themeName = decoded.Theme
+            local menuScale = decoded.MenuScale
+            local positions = decoded.Positions
+
+            task.spawn(function()
+                local processed = 0
+                local function yieldIfNeeded()
+                    processed += 1
+                    if processed % 8 == 0 then
+                        task.wait()
+                    end
+                end
+
+                for index = 1, #objects do
+                    if loadToken ~= SaveManager._loadToken then return end
+                    local option = objects[index]
+                    if type(option) == "table" and option.idx then
+                        local setter = setters[option.idx]
+                        if setter then
+                            local val = option.value
+                            if type(val) == "table" and val.Color then
+                                pcall(setter, Color3.fromHex(val.Color), val.Alpha)
+                            else
+                                pcall(setter, val)
                             end
                         end
-                        processed += 1
-                        if processed % 20 == 0 then
-                            task.wait()
-                        end
                     end
-                end)
-            end
-
-            
-            if decoded.Theme and Themes[decoded.Theme] then
-                Library.SelectedTheme = decoded.Theme
-                Library.Theme = Themes[decoded.Theme]
-                for ThemeKey, ColorValue in pairs(Library.Theme) do
-                    Library:ChangeTheme(ThemeKey, ColorValue)
+                    yieldIfNeeded()
                 end
-            end
 
-            
-            if decoded.MenuScale then
-                Library.MenuScale = decoded.MenuScale
-                if Library.MenuScaleObject then
-                    Library.MenuScaleObject.Scale = decoded.MenuScale
+                if loadToken ~= SaveManager._loadToken then return end
+                if themeName and Themes[themeName] then
+                    Library.SelectedTheme = themeName
+                    Library.Theme = Themes[themeName]
+                    local themeCount = 0
+                    for ThemeKey, ColorValue in pairs(Library.Theme) do
+                        if loadToken ~= SaveManager._loadToken then return end
+                        pcall(function() Library:ChangeTheme(ThemeKey, ColorValue) end)
+                        themeCount += 1
+                        if themeCount % 4 == 0 then task.wait() end
+                    end
                 end
-            end
 
-            
-            if decoded.Positions then
-                pcall(function()
-                    if decoded.Positions.Watermark then
+                if loadToken ~= SaveManager._loadToken then return end
+                if menuScale then
+                    Library.MenuScale = tonumber(menuScale) or Library.MenuScale
+                    if Library.MenuScaleObject then
+                        pcall(function() Library.MenuScaleObject.Scale = Library.MenuScale end)
+                    end
+                end
+
+                if type(positions) == "table" then
+                    pcall(function()
+                        local wmPos = positions.Watermark
                         local wm = Library.WatermarkObject
-                        if wm and wm.Items and wm.Items["Watermark"] and wm.Items["Watermark"].Instance then
-                            local p = decoded.Positions.Watermark
-                            wm.Items["Watermark"].Instance.Position = UDim2.new(p[1], p[2], p[3], p[4])
+                        if type(wmPos) == "table" and wm and wm.Items and wm.Items["Watermark"] and wm.Items["Watermark"].Instance then
+                            wm.Items["Watermark"].Instance.Position = UDim2.new(wmPos[1], wmPos[2], wmPos[3], wmPos[4])
                         end
-                    end
-                end)
-                pcall(function()
-                    if decoded.Positions.KeybindList then
+                    end)
+                    pcall(function()
+                        local klPos = positions.KeybindList
                         local kl = Library.KeyList
-                        if kl and kl.Items and kl.Items["KeybindList"] and kl.Items["KeybindList"].Instance then
-                            local p = decoded.Positions.KeybindList
-                            kl.Items["KeybindList"].Instance.Position = UDim2.new(p[1], p[2], p[3], p[4])
+                        if type(klPos) == "table" and kl and kl.Items and kl.Items["KeybindList"] and kl.Items["KeybindList"].Instance then
+                            kl.Items["KeybindList"].Instance.Position = UDim2.new(klPos[1], klPos[2], klPos[3], klPos[4])
                         end
-                    end
-                end)
-                pcall(function()
-                    if decoded.Positions.KeybindListSize then
+                    end)
+                    pcall(function()
                         local kl = Library.KeyList
-                        if kl and type(kl.SetSize) == "function" then
-                            local s = decoded.Positions.KeybindListSize
-                            kl:SetSize(s[2], s[4])
+                        local size = positions.KeybindListSize
+                        if type(size) == "table" and kl and type(kl.SetSize) == "function" then
+                            kl:SetSize(size[2], size[4])
                         end
-                    end
-                end)
-            end
+                    end)
+                end
+            end)
 
             return true
         end
