@@ -119,7 +119,7 @@ end
 RunService.Heartbeat:Connect(function()
     if game.PlaceId == HUB_PLACE_ID and not hasStarted then
         hasStarted = true
-        task.wait(3)
+        task.wait(2)
         joinNextServer()
     end
 end)
