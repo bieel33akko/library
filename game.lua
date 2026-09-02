@@ -1,10 +1,11 @@
+
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
-local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1543097670632087603/nP_xRL1gJdpE_C_RE6som3RvPkBvXM0xKh9bccySTpx3YJtgk7ZPxgjU5DlF5j023Od1"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1543451324161466418/B_xwD8vNo5irPQFZZMtopFFF1u5Y_HQmiITp16gy_pZH6Qv3avsxprCB596zqJnmpeeN"
 local HUB_PLACE_ID = 15327728308
-local PING_ROLE_ID = "1535102256519577660"
+local PING_ROLE_ID = "1004910284948906076"
 local ITENS_ALVO = {"barret50", "renellim4", "m79", "backpacktier4"}
 
 if not game:IsLoaded() then
@@ -56,8 +57,34 @@ for _, player in ipairs(Players:GetPlayers()) do
 end
 
 if #found > 0 then
-    sendToDiscord("Total: " .. #found, false)
+    sendToDiscord("Total itens: " .. #found, false)
 end
+
+local zombieFound = false
+pcall(function()
+    local EmberClient = require(game:GetService("ReplicatedFirst")
+        :WaitForChild("EmberClientLibrary")
+        :WaitForChild("EmberClient")
+        :WaitForChild("EmberClient"))
+
+    local NPCSimulatorService = EmberClient:GetService("NPCSimulatorService")
+
+    for _, Zombie in NPCSimulatorService.NPCs do
+        for _, Item in Zombie.Equipment do
+            local ItemClass = Item.ClassName
+            local Skin = Item.SkinOverride
+
+            if ItemClass:find("Altyn") then
+                local label = ItemClass:gsub(".item", "")
+                sendToDiscord("Chinese zombie: " .. label, true)
+                zombieFound = true
+            elseif Skin and Skin:find("Beret") then
+                sendToDiscord("Tactical zombie: " .. Skin, true)
+                zombieFound = true
+            end
+        end
+    end
+end)
 
 task.wait(3)
 
